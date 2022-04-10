@@ -6,6 +6,7 @@ import com.xxxx.seckill.mapper.UserMapper;
 import com.xxxx.seckill.pojo.User;
 import com.xxxx.seckill.service.IUserService;
 import com.xxxx.seckill.utils.CookieUtil;
+import com.xxxx.seckill.utils.CookieUtil2;
 import com.xxxx.seckill.utils.MD5Util;
 import com.xxxx.seckill.utils.UUIDUtil;
 import com.xxxx.seckill.vo.LoginVo;
@@ -50,16 +51,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         String mobile = loginVo.getMobile();
         String password = loginVo.getPassword();
 
-
-//        if(StringUtils.isEmpty(mobile) || StringUtils.isEmpty(password)){
-//            return RespBean.error(RespBeanEnum.LOGIN_ERROR);
-//        }
-//
-//        //如果不是手机号
-//        if(!ValidatorUtil.isMobile(mobile)){
-//            return RespBean.error(RespBeanEnum.MOBILE_ERROR);
-//        }
-
         //根据手机号获取用户
         User user = userMapper.selectById(mobile);
         //如果查不到用户
@@ -81,15 +72,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
 
         //将用户信息存入redis中
         redisTemplate.opsForValue().set("user:"+uuid,user);
-        CookieUtil.setCookie(request, response, "uuid", uuid);
+        //CookieUtil.setCookie(request, response, "uuid", uuid);
+        CookieUtil2.addCookie(response,"uuid",uuid,-1);
         return RespBean.success(uuid);
     }
 
     @Override
     public User getUserByCookie(String uuid,HttpServletRequest request, HttpServletResponse response) {
         User user = (User) redisTemplate.opsForValue().get("user:" + uuid);
+
         if (user!=null){
-            CookieUtil.setCookie(request,response,"uuid",uuid);
+            CookieUtil2.addCookie(response,"uuid",uuid,-1);
+            //CookieUtil.setCookie(request,response,"uuid",uuid);
         }
         return user;
     }

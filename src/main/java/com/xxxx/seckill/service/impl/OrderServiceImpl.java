@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.conditions.update.UpdateChainWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.google.common.hash.BloomFilter;
 import com.xxxx.seckill.exception.GlobalException;
 import com.xxxx.seckill.mapper.OrderMapper;
 import com.xxxx.seckill.pojo.*;

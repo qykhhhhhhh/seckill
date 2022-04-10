@@ -63,47 +63,7 @@ public class GoodsController {
             valueOperations.set("goodsList",html,60, TimeUnit.SECONDS);
         }
         return html;
-
-
-        //return "goodsList";
     }
-
-//    @RequestMapping(value = "/toDetail2/{goodsId}",produces = "text/html;charset=utf-8")
-//    @ResponseBody
-//    public String toDetail2(@PathVariable("goodsId") Long goodsId,Model model,User user,HttpServletRequest request,HttpServletResponse response){
-//        ValueOperations valueOperations = redisTemplate.opsForValue();
-//        String html = (String) valueOperations.get("goodsDetail:" + goodsId);
-//        if (!StringUtils.isEmpty(html)){
-//            return html;
-//        }
-//        model.addAttribute("user",user);
-//        GoodsVo goodsVo = goodsService.findGoodsVoByGoodsId(goodsId);
-//        Date startDate = goodsVo.getStartDate();
-//        Date endDate = goodsVo.getEndDate();
-//        Date nowDate = new Date();
-//        int remainSecond = 0;
-//        int seckillStatus = 0;
-//        if (nowDate.before(startDate)){
-//            seckillStatus = 0;
-//            remainSecond = (int) ((startDate.getTime()-nowDate.getTime())/1000);
-//        }else if(nowDate.after(endDate)){
-//            seckillStatus = 2;
-//            remainSecond = -1;
-//        }else{
-//            seckillStatus = 1;
-//            remainSecond = 0;
-//        }
-//        model.addAttribute("seckillStatus",seckillStatus);
-//        model.addAttribute("remainSecond",remainSecond);
-//        model.addAttribute("goods",goodsVo);
-//        WebContext context = new WebContext(request, response, request.getServletContext(), request.getLocale(), model.asMap());
-//        html = thymeleafViewResolver.getTemplateEngine().process("goodsDetail", context);
-//        if (!StringUtils.isEmpty(html)){
-//            valueOperations.set("goodsDetail:" + goodsId,html,60,TimeUnit.SECONDS);
-//        }
-//        return html;
-//    }
-
 
     @RequestMapping("/detail/{goodsId}")
     @ResponseBody

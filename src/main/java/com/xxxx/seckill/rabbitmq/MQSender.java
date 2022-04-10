@@ -12,7 +12,7 @@ public class MQSender {
     RabbitTemplate rabbitTemplate;
 
     public void sendSeckillMessage(String message){
-        System.out.println("发送消息："+message);
+
         rabbitTemplate.convertAndSend("seckillExchange","seckill.message",message);
     }
 

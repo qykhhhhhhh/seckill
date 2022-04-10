@@ -1,5 +1,7 @@
 package com.xxxx.seckill.controller;
 
+import com.google.common.hash.BloomFilter;
+import com.google.common.hash.Funnels;
 import com.wf.captcha.ArithmeticCaptcha;
 import com.xxxx.seckill.exception.GlobalException;
 import com.xxxx.seckill.pojo.*;
@@ -36,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 @Controller
 @RequestMapping("/seckill")
 public class SecKillController implements InitializingBean {
+
     @Autowired
     private IGoodsService goodsService;
 
@@ -54,12 +57,52 @@ public class SecKillController implements InitializingBean {
     @Autowired
     private RedisScript redisScript;
 
-    private Map<Long,Boolean> EmptyStockMap = new HashMap<>();
+    static private Map<Long,Boolean> EmptyStockMap;
+
+    static private BloomFilter<Long> filter;
 
 
     //优化前QPS:1596
     //页面静态化后:1998
     //数据库加索引变行锁+redis预减库存+内存标记+rabbitmq：3963
+//    @RequestMapping(value = "/doSeckill",method = RequestMethod.GET)
+//    @ResponseBody
+//    public RespBean doSeckill2(User user, Long goodsId){
+//        if (user==null){
+//            return RespBean.error(RespBeanEnum.SESSION_ERROR);
+//        }
+//
+//        ValueOperations valueOperations = redisTemplate.opsForValue();
+//
+////        //判断秒杀路径
+////        boolean check = orderService.checkPath(user,goodsId,path);
+////        if (!check){
+////            return RespBean.error(RespBeanEnum.REQUEST_ILLEGAL);
+////        }
+//
+//        //通过redis判断是否重复抢购
+//        SeckillOrder seckillOrder = (SeckillOrder) redisTemplate.opsForValue().get("order:" + user.getId() + ":" + goodsId);
+//        if (seckillOrder!=null){
+//            return RespBean.error(RespBeanEnum.REPEATE_ERROR);
+//        }
+//        //通过内存标记，减少Redis的访问
+//        if (EmptyStockMap.get(goodsId)){
+//            return RespBean.error(RespBeanEnum.EMPTY_STOCK);
+//        }
+//        //预减库存，具有原子性
+//        Long stock = valueOperations.decrement("seckillGoods:" + goodsId);
+//        //System.out.println("stock="+stock);
+//        if (stock<0){
+//            EmptyStockMap.put(goodsId,true);
+//            valueOperations.increment("seckillGoods:" + goodsId);
+//            return RespBean.error(RespBeanEnum.EMPTY_STOCK);
+//        }
+//        GoodsVo goods = goodsService.findGoodsVoByGoodsId(goodsId);
+//        SeckillMessage seckillMessage = new SeckillMessage(user, goodsId);
+//        mqSender.sendSeckillMessage(JsonUtil.object2JsonStr(seckillMessage));
+//        return RespBean.success(0);
+//
+//    }
 
     @RequestMapping(value = "/{path}/doSeckill",method = RequestMethod.POST)
     @ResponseBody
@@ -67,6 +110,7 @@ public class SecKillController implements InitializingBean {
         if (user==null){
             return RespBean.error(RespBeanEnum.SESSION_ERROR);
         }
+
         ValueOperations valueOperations = redisTemplate.opsForValue();
 
         //判断秒杀路径
@@ -99,6 +143,7 @@ public class SecKillController implements InitializingBean {
 
     }
 
+
     @RequestMapping(value = "/result",method = RequestMethod.GET)
     @ResponseBody
     public RespBean getResult(User user,Long goodsId){
@@ -115,6 +160,10 @@ public class SecKillController implements InitializingBean {
     public RespBean getPath(User user, Long goodsId, String captcha, HttpServletRequest request){
         if (user==null){
             return RespBean.error(RespBeanEnum.SESSION_ERROR);
+        }
+        //布隆过滤器
+        if (!filter.mightContain(goodsId)){
+            return RespBean.error(RespBeanEnum.GOODS_NOT_EXIST);
         }
         //限流
         ValueOperations valueOperations = redisTemplate.opsForValue();
@@ -161,9 +210,13 @@ public class SecKillController implements InitializingBean {
         if (CollectionUtils.isEmpty(list)){
             return ;
         }
+        EmptyStockMap = new HashMap<>();
+        filter = BloomFilter.create(Funnels.longFunnel(), 100, 0.01);
         for (GoodsVo goodsVo:list){
             redisTemplate.opsForValue().set("seckillGoods:"+goodsVo.getId(),goodsVo.getStockCount());
             EmptyStockMap.put(goodsVo.getId(),false);
+            //bloom过滤器
+            filter.put(goodsVo.getId());
         }
     }
 }
